@@ -33,7 +33,11 @@
 #if USE_OPENCL
   #include "clpp11.h"
 #else
+  #if USE_HIP
+  #include "hippp11.h"
+  #else
   #include "cupp11.h"
+  #endif
 #endif
 
 // C++ includes

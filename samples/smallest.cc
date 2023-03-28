@@ -39,7 +39,11 @@
 
 // ... or use CUDA instead
 #else
+  #if USE_HIP
+  #include "hippp11.h"
+  #else
   #include "cupp11.h"
+  #endif
   static auto program_string = R"(
   extern "C" __global__ void add(const float* a, const float* b, float* c) {
     unsigned idx = threadIdx.x + blockDim.x*blockIdx.x;

@@ -33,7 +33,11 @@
 #if USE_OPENCL
   #include "clpp11.h"
 #else
+  #if USE_HIP
+  #include "hippp11.h"
+  #else
   #include "cupp11.h"
+  #endif
 #endif
 
 // C++ includes
@@ -50,7 +54,11 @@ int main() {
   #if USE_OPENCL
     auto compiler_options = std::vector<std::string>{};
   #else
+    #if USE_HIP
+    auto compiler_options = std::vector<std::string>{};
+    #else
     auto compiler_options = std::vector<std::string>{"--gpu-architecture=compute_35"};
+    #endif
   #endif
 
   // Example CUDA/OpenCL program as a string. Note that this is the first (header) part only, the
