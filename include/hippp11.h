@@ -41,9 +41,10 @@
 #include <vector>    // std::vector
 #include <memory>    // std::shared_ptr
 
-// CUDA
-#include <hip/hip_runtime.h>    // UIP driver API
-#include <hiprtc.h>   // HIP runtime compilation API
+// HIP
+#include <hip/hip_runtime.h>    // HIP driver API
+#include <hip/hip_runtime_api.h>
+#include <hip/hiprtc.h>   // HIP runtime compilation API
 
 // Exception classes
 #include "cxpp11_common.hpp"
@@ -78,13 +79,15 @@ public:
 
 private:
   std::string GetErrorName(hipError_t status) const {
-    const char* status_code;
-    hipDrvGetErrorName(status, &status_code);
+    //const char* status_code;
+    //hipDrvGetErrorName(status, &status_code);
+    const char* status_code = hipGetErrorName(status);
     return std::string(status_code);
   }
   std::string GetErrorString(hipError_t status) const {
-    const char* status_string;
-    hipDrvGetErrorString(status, &status_string);
+    //const char* status_string;
+    //hipDrvGetErrorString(status, &status_string);
+    const char* status_string = hipGetErrorString(status);
     return std::string(status_string);
   }
 };
@@ -176,7 +179,7 @@ class Platform {
 
   // Initializes the platform. Note that the platform ID variable is not actually used for CUDA.
   explicit Platform(const size_t platform_id) : platform_id_(0) {
-    if (platform_id != 0) { throw LogicError("CUDA back-end requires a platform ID of 0"); }
+    if (platform_id != 0) { throw LogicError("HIP back-end requires a platform ID of 0"); }
     CheckError(hipInit(0));
   }
 
@@ -186,7 +189,7 @@ class Platform {
   std::string Version() const {
     auto result = 0;
     CheckError(hipDriverGetVersion(&result));
-    return "CUDA driver "+std::to_string(result);
+    return "HIP driver "+std::to_string(result);
   }
 
   // Returns the number of devices on this platform
@@ -590,7 +593,7 @@ class Buffer {
   }
 
   // Copies from host to device: writing the device buffer a-synchronously
-  void WriteAsync(const Queue &queue, const size_t size, const T* host, const size_t offset = 0) {
+  void WriteAsync(const Queue &queue, const size_t size, T* host, const size_t offset = 0) {
     if (access_ == BufferAccess::kReadOnly) {
       throw LogicError("Buffer: writing to a read-only buffer");
     }
@@ -609,11 +612,11 @@ class Buffer {
   }
 
   // Copies from host to device: writing the device buffer 
-  void Write(const Queue &queue, const size_t size, const T* host, const size_t offset = 0) {
+  void Write(const Queue &queue, const size_t size, T* host, const size_t offset = 0) {
     WriteAsync(queue, size, host, offset);
     queue.Finish();
   }
-  void Write(const Queue &queue, const size_t size, const std::vector<T> &host,
+  void Write(const Queue &queue, const size_t size, std::vector<T> &host,
              const size_t offset = 0) {
     Write(queue, size, host.data(), offset);
   }
