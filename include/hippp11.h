@@ -492,7 +492,7 @@ class BufferHost {
   explicit BufferHost(const Context &, const size_t size):
       buffer_(new void*, [](void** m) { CheckError(hipHostFree(*m)); delete m; }),
       size_(size) {
-    CheckError(hipMemAllocHost(buffer_.get(), size*sizeof(T)));
+    CheckError(hipHostMalloc(buffer_.get(), size*sizeof(T)));
   }
 
   // Retrieves the actual allocated size in bytes
@@ -561,7 +561,7 @@ class Buffer {
     if (access_ == BufferAccess::kWriteOnly) {
       throw LogicError("Buffer: reading from a write-only buffer");
     }
-    CheckError(hipMemcpyDtoHAsync(host, *buffer_ + offset*sizeof(T), size*sizeof(T), queue()));
+    CheckError(hipMemcpyDtoHAsync(host, static_cast<T*>(*buffer_) + offset, size*sizeof(T), queue()));
   }
   void ReadAsync(const Queue &queue, const size_t size, std::vector<T> &host,
                  const size_t offset = 0) const {
@@ -600,7 +600,7 @@ class Buffer {
     if (GetSize() < (offset+size)*sizeof(T)) {
       throw LogicError("Buffer: target device buffer is too small");
     }
-    CheckError(hipMemcpyHtoDAsync(*buffer_ + offset*sizeof(T), host, size*sizeof(T), queue()));
+    CheckError(hipMemcpyHtoDAsync(static_cast<T*>(*buffer_) + offset, host, size*sizeof(T), queue()));
   }
   void WriteAsync(const Queue &queue, const size_t size, const std::vector<T> &host,
                   const size_t offset = 0) {
