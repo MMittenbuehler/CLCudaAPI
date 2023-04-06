@@ -250,7 +250,7 @@ class Device {
   std::string Name() const {
     auto result = std::string{};
     result.resize(kStringLength);
-    CheckError(hipDeviceGetName(&result[0], result.size(), device_));
+    CheckError(hipDeviceGetName(&result[0], result.size(), device_id_));
     return result;
   }
   std::string Type() const { return "GPU"; }
@@ -341,8 +341,8 @@ class Context {
  public:
 
   // Constructor based on the regular CUDA data-type: memory management is handled elsewhere
-  explicit Context(const hipCtx_t context):
-      context_(new hipCtx_t) {
+  explicit Context(const hipStream_t context):
+      context_(new hipStream_t) {
     *context_ = context;
   }
 
@@ -360,7 +360,7 @@ class Context {
   const RawContext& operator()() const { return *context_; }
   RawContext* pointer() const { return &(*context_); }
  private:
-  std::shared_ptr<hipCtx_t> context_;
+  std::shared_ptr<hipStream_t> context_;
 };
 
 // Pointer to a raw CUDA context
