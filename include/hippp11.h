@@ -352,7 +352,7 @@ class Context {
         if (*c) { CheckErrorDtor(hipStreamDestroy(*c)); }
         delete c;
       }) {
-    CheckError(hipSetDevice(device()));
+    //CheckError(hipSetDevice(device()));
     CheckError(hipStreamCreate(context_.get()));
   }
 
@@ -638,7 +638,8 @@ class Buffer {
   // Retrieves the actual allocated size in bytes
   size_t GetSize() const {
     auto result = size_t{0};
-    CheckError(hipMemGetAddressRange(nullptr, &result, *buffer_));
+    hipDeviceptr_t pbase;
+    CheckError(hipMemGetAddressRange(&pbase, &result, *buffer_));
     return result;
   }
 
