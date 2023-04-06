@@ -593,13 +593,15 @@ class Buffer {
   }
 
   // Copies from host to device: writing the device buffer a-synchronously
-  void WriteAsync(const Queue &queue, const size_t size, T* host, const size_t offset = 0) {
+  void WriteAsync(const Queue &queue, const size_t size, const T* host_cost, const size_t offset = 0) {
     if (access_ == BufferAccess::kReadOnly) {
       throw LogicError("Buffer: writing to a read-only buffer");
     }
     if (GetSize() < (offset+size)*sizeof(T)) {
       throw LogicError("Buffer: target device buffer is too small");
     }
+    // hipMemcpyHtoDAsync does not change the host data, but is not defined with const pointer!
+    T* host = const_cast<T*>(host_cost);
     CheckError(hipMemcpyHtoDAsync(static_cast<T*>(*buffer_) + offset, host, size*sizeof(T), queue()));
   }
   void WriteAsync(const Queue &queue, const size_t size, const std::vector<T> &host,
