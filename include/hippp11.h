@@ -199,13 +199,13 @@ class Platform {
     return static_cast<size_t>(result);
   }
 
-  // Accessor to the raw ID (which doesn't exist in the CUDA back-end, this is always just 0)
+  // Accessor to the raw ID (which doesn't exist in the HIP back-end, this is always just 0)
   const RawPlatformID& operator()() const { return platform_id_; }
 private:
   const size_t platform_id_;
 };
 
-// Retrieves a vector with all platforms. Note that there is just one platform in CUDA.
+// Retrieves a vector with all platforms. Note that there is just one platform in HIP.
 inline std::vector<Platform> GetAllPlatforms() {
   auto all_platforms = std::vector<Platform>{ Platform(size_t{0}) };
   return all_platforms;
@@ -214,17 +214,17 @@ inline std::vector<Platform> GetAllPlatforms() {
 // =================================================================================================
 
 // Raw device ID type
-using RawDeviceID = hipDevice_t;
+using RawDeviceID = size_t;
 
 // C++11 version of 'hipDevice_t'
 class Device {
  public:
 
   // Constructor based on the regular CUDA data-type
-  explicit Device(const hipDevice_t device): device_(device) { }
+  explicit Device(const hipDevice_t device): device_id_(device) { }
 
   // Initialization
-  explicit Device(const Platform &platform, const size_t device_id) {
+  explicit Device(const Platform &platform, const size_t device_id) : device_id_(device_id) {
     auto num_devices = platform.NumDevices();
     if (num_devices == 0) {
       throw RuntimeError("Device: no devices found");
@@ -232,8 +232,6 @@ class Device {
     if (device_id >= num_devices) {
       throw RuntimeError("Device: invalid device ID "+std::to_string(device_id));
     }
-
-    CheckError(hipDeviceGet(&device_, device_id));
   }
 
   // Methods to retrieve device information
@@ -286,7 +284,7 @@ class Device {
   size_t ComputeUnits() const { return GetInfo(hipDeviceAttributeMultiprocessorCount); }
   unsigned long MemorySize() const {
     auto result = size_t{0};
-    CheckError(hipDeviceTotalMem(&result, device_));
+    CheckError(hipDeviceTotalMem(&result, device_id_));
     return static_cast<unsigned long>(result);
   }
   unsigned long MaxAllocSize() const { return MemorySize(); }
@@ -321,14 +319,14 @@ class Device {
   std::string NVIDIAComputeCapability() const { return Capabilities(); }
 
   // Accessor to the private data-member
-  const RawDeviceID& operator()() const { return device_; }
+  const RawDeviceID& operator()() const { return device_id_; }
  private:
-  hipDevice_t device_;
+  size_t device_id_;
 
   // Private helper function
   size_t GetInfo(const hipDeviceAttribute_t info) const {
     auto result = 0;
-    CheckError(hipDeviceGetAttribute(&result, info, device_));
+    CheckError(hipDeviceGetAttribute(&result, info, device_id_));
     return static_cast<size_t>(result);
   }
 };
@@ -336,7 +334,7 @@ class Device {
 // =================================================================================================
 
 // Raw context type
-using RawContext = hipCtx_t;
+using RawContext = hipStream_t;
 
 // C++11 version of 'hipCtx_t'
 class Context {
@@ -350,11 +348,12 @@ class Context {
 
   // Regular constructor with memory management
   explicit Context(const Device &device):
-      context_(new hipCtx_t, [](hipCtx_t* c) {
-        if (*c) { CheckErrorDtor(hipCtxDestroy(*c)); }
+      context_(new hipStream_t, [](hipStream_t* c) {
+        if (*c) { CheckErrorDtor(hipStreamDestroy(*c)); }
         delete c;
       }) {
-    CheckError(hipCtxCreate(context_.get(), 0, device()));
+    CheckError(hipSetDevice(device()));
+    CheckError(hipStreamCreate(context_.get()));
   }
 
   // Accessor to the private data-member
