@@ -96,7 +96,7 @@ private:
 class CLCudaAPINVRTCError : public ErrorCode<DeviceError, hiprtcResult> {
 public:
   explicit CLCudaAPINVRTCError(hiprtcResult status, const std::string &where):
-      ErrorCode(status, where, "CUDA NVRTC error: " + where + ": " + GetErrorString(status)) {
+      ErrorCode(status, where, "HIP RTC error: " + where + ": " + GetErrorString(status)) {
   }
 
   static void Check(const hiprtcResult status, const std::string &where) {
@@ -600,7 +600,8 @@ class Buffer {
     if (GetSize() < (offset+size)*sizeof(T)) {
       throw LogicError("Buffer: target device buffer is too small");
     }
-    CheckError(hipMemcpyHtoDAsync(*buffer_ + offset*sizeof(T), host, size*sizeof(T), queue()));
+    T* dev_ptr = static_cast<T*>(*buffer_) + offset;
+    CheckError(hipMemcpyHtoDAsync(dev_ptr, host, size*sizeof(T), queue()));
   }
   void WriteAsync(const Queue &queue, const size_t size, const std::vector<T> &host,
                   const size_t offset = 0) {
