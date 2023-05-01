@@ -613,11 +613,11 @@ class Buffer {
   }
 
   // Copies from host to device: writing the device buffer 
-  void Write(const Queue &queue, const size_t size, T* host, const size_t offset = 0) {
+  void Write(const Queue &queue, const size_t size, const T* host, const size_t offset = 0) {
     WriteAsync(queue, size, host, offset);
     queue.Finish();
   }
-  void Write(const Queue &queue, const size_t size, std::vector<T> &host,
+  void Write(const Queue &queue, const size_t size, const std::vector<T> &host,
              const size_t offset = 0) {
     Write(queue, size, host.data(), offset);
   }
